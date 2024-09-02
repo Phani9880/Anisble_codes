@@ -1,0 +1,32 @@
+[ansuser@ip-172-31-21-179 ~]$ cat nfsserver.yaml
+---
+- hosts: nfsserver
+  become: yes
+  tasks:
+    - name: install nfs-utils
+      yum: name=nfs-utils state=latest
+
+    - name: Create a mountable directory if it does not exist
+      file:
+        path: /home/ec2-user
+        state: directory
+        owner: ec2-user
+        group: ec2-user
+        mode: '0775'
+    - name: enable rpcbind nfslock nfs
+      service:
+        name: "{{ item }}"
+        enabled: yes
+      with_items:
+        - rpcbind
+        - nfs-utils
+    - name: Copy exports file.
+      template:
+        src: /home/ansuser/exports.j2
+        dest: /etc/exports
+        owner: root
+        group: root
+        mode: 0644
+    - name: NFS apply change configrue
+      shell: systemctl reload nfs-server;exportfs -a
+[ansuser@ip-172-31-21-179 ~]$
