@@ -1,0 +1,220 @@
+[ansuser@ip-172-31-21-179 code]$ cat copy.yaml
+- name: Copy task
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: copy file to target server
+      copy:
+       src: /tmp/file1
+       dest: /tmp/file1
+       owner: appuser
+       group: root
+       mode: '0775'
+[ansuser@ip-172-31-21-179 code]$
+-------------------------------------------
+[ansuser@ip-172-31-21-179 code]$ cat fetch.yaml
+- name: Fetching task
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Fetching file to local
+      fetch:
+        src: /tmp/file2
+        dest: /tmp/file2
+[ansuser@ip-172-31-21-179 code]$
+--------------------------------------------
+[ansuser@ip-172-31-21-179 code]$ cat command.yaml
+- name: command/block & rescue task
+  hosts: all
+  gather_facts: false
+  tasks:
+  - block:
+      - name: command to enter in target
+        command:
+          cmd: cat /tmp/file3
+        register: output
+
+    rescue:
+      - name: print rescue message
+        debug:
+          msg: "{{ output }}"
+[ansuser@ip-172-31-21-179 code]$
+---------------------------------------------
+[ansuser@ip-172-31-21-179 code]$ cat package.yaml
+- name: installing pcakage on target server.
+  hosts: all
+  tasks:
+    - name: Install package
+      package:
+        name: httpd
+        state: present
+[ansuser@ip-172-31-21-179 code]$
+---------------------------------------------
+[ansuser@ip-172-31-21-179 code]$ cat package.yaml
+- name: installing pcakage on target server.
+  hosts: all
+  tasks:
+    - name: Install package
+      package:
+        name: "{{ item }}"
+        state: present
+      loop:
+       - httpd
+       - debug
+[ansuser@ip-172-31-21-179 code]$
+---------------------------------------------
+
+[ansuser@ip-172-31-21-179 code]$ cat facts.yaml
+- name: Gather Facts from target
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Collect only facts returned by facter
+      debug:
+        msg: "my os is {{ ansible_distribution }}"
+[ansuser@ip-172-31-21-179 code]$
+----------------------------------------------
+[ansuser@ip-172-31-21-179 code]$ cat service.yaml
+- name: restarting service
+  hosts: all
+  tasks:
+    - name: service
+      service:
+        name: httpd
+        state: started
+[ansuser@ip-172-31-21-179 code]$
+--------------------------------------------------
+[ansuser@ip-172-31-21-179 code]$ cat template.yaml
+- name: Template task
+  hosts: all
+  tasks:
+    - name: copying file to target location
+      template:
+        src: file.j2
+        dest: /tmp/file22
+[ansuser@ip-172-31-21-179 code]$
+---------------------------------------------------
+[ansuser@ip-172-31-21-179 code]$ cat file.yaml
+- name: Filemodule
+  hosts: all
+  tasks:
+    - name: creating directory
+      file:
+        path: /tmp/file22
+        state: directory
+[ansuser@ip-172-31-21-179 code]$
+---------------------------------------------------
+[ansuser@ip-172-31-21-179 code]$ cat lineinfile.yaml
+- name: updating file
+  hosts: all
+  tasks:
+    - name: Updating file
+      lineinfile:
+        path: /tmp/file22
+        regexp: "Phaneendra"
+        line: "Hi this is phani,living in dubai"
+        state: present
+        backup: yes
+[ansuser@ip-172-31-21-179 code]$
+----------------------------------------------------
+[ansuser@ip-172-31-21-179 code]$ cat vars.yaml
+- name: vars
+  hosts: all
+  vars:
+  - x: "7"
+  - y: "8"
+  - z: "9"
+  tasks:
+    - debug:
+        var: "x"
+    - debug:
+        var: "y"
+    - debug:
+        var: "z"
+
+[ansuser@ip-172-31-21-179 code]$
+-----------------------------------------------
+[ansuser@ip-172-31-21-179 code]$ cat vars.yaml
+- name: playbook
+  vars_files:
+    -  var.yaml
+  hosts: all
+  tasks:
+    - debug:
+        var: "x"
+    - debug:
+        var: "y"
+    - debug:
+        var: "z"
+
+[ansuser@ip-172-31-21-179 code]$
+-----------------------------------------------
+[ansuser@ip-172-31-21-179 code]$ cat vars.yaml
+- name: playbook
+  hosts: all
+  tasks:
+    - include_vars: /home/ansuser/code/vars/main.yaml
+    - debug:
+        var: "x"
+    - debug:
+        var: "y"
+    - debug:
+        var: "z"
+
+[ansuser@ip-172-31-21-179 code]$
+----------------------------------------------
+- name: Verify apache installation
+  hosts: webservers
+  vars:
+    http_port: 80
+    max_clients: 200
+  remote_user: root
+  tasks:
+    - name: Ensure apache is at the latest version
+      ansible.builtin.yum:
+        name: httpd
+        state: latest
+
+    - name: Write the apache config file
+      ansible.builtin.template:
+        src: /srv/httpd.j2
+        dest: /etc/httpd.conf
+      notify:
+        - Restart apache
+
+    - name: Ensure apache is running
+      ansible.builtin.service:
+        name: httpd
+        state: started
+
+  handlers:
+    - name: Restart apache
+      ansible.builtin.service:
+        name: httpd
+        state: restarted
+
+
+Red Hat Enterprise Linux 8
+----------------------------------------------------
+---
+- name: Check if a service is running and send email if not
+  hosts: your_target_hosts  # Replace with your target host or group
+  gather_facts: false
+
+  tasks:
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Check if nginx service is running
+      debug:
+        msg: "Nginx service is {{ ansible_facts.services['nginx'].state }}"
+
+    - name: Send email if nginx service is not running
+      ansible.builtin.mail:
+        host: "localhost"  # Replace with your SMTP server host
+        port: 25  # Replace with your SMTP server port
+        to: "recipient@example.com"
+        from: "sender@example.com"
+        subject: "Service Alert: Nginx is not running!"
+        body: "The Nginx service is not running on the server {{ inventory_hostname }}. Please take necessary actions."
+      when: ansible_facts.services['nginx'].state != "running"
